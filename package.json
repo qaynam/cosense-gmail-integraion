@@ -5,6 +5,7 @@
 	"type": "module",
 	"scripts": {
 		"dev": "vite dev",
+		"dev:upstash": "npx @upstash/qstash-cli dev",
 		"build": "vite build",
 		"preview": "vite preview",
 		"prepare": "svelte-kit sync || echo ''",
@@ -37,5 +38,8 @@
 		"typescript-eslint": "^8.20.0",
 		"vite": "^7.0.4",
 		"vitest": "^3.2.3"
+	},
+	"dependencies": {
+		"@upstash/workflow": "^0.2.17"
 	}
 }
