@@ -1,74 +1,88 @@
-import { db } from "./db";
-import { encodeBase32, encodeHexLowerCase } from "@oslojs/encoding";
-import { sha256 } from "@oslojs/crypto/sha2";
+import { redis } from './db';
+import { encodeBase32, encodeHexLowerCase } from '@oslojs/encoding';
+import { sha256 } from '@oslojs/crypto/sha2';
 
-import type { User } from "./user";
-import type { RequestEvent } from "@sveltejs/kit";
+import type { User } from './user';
+import type { RequestEvent } from '@sveltejs/kit';
 
-export function validateSessionToken(token: string): SessionValidationResult {
+interface SessionData {
+	userId: number;
+	expiresAt: number;
+}
+
+export interface Session extends Omit<SessionData, 'expiresAt'> {
+	id: string;
+	expiresAt: Date;
+}
+
+export async function validateSessionToken(token: string): Promise<SessionValidationResult> {
 	const sessionId = encodeHexLowerCase(sha256(new TextEncoder().encode(token)));
-	const row = db.queryOne(
-		`
-SELECT session.id, session.user_id, session.expires_at, user.id, user.google_id, user.email, user.name, user.picture FROM session
-INNER JOIN user ON session.user_id = user.id
-WHERE session.id = ?
-`,
-		[sessionId]
-	);
+	const sessionData = await redis.get<SessionData | null>(`session:${sessionId}`);
 
-	if (row === null) {
+	if (!sessionData) {
 		return { session: null, user: null };
 	}
+
 	const session: Session = {
-		id: row.string(0),
-		userId: row.number(1),
-		expiresAt: new Date(row.number(2) * 1000)
+		id: sessionId,
+		userId: sessionData.userId,
+		expiresAt: new Date(sessionData.expiresAt)
 	};
-	const user: User = {
-		id: row.number(3),
-		googleId: row.string(4),
-		email: row.string(5),
-		name: row.string(6),
-		picture: row.string(7)
-	};
+
 	if (Date.now() >= session.expiresAt.getTime()) {
-		db.execute("DELETE FROM session WHERE id = ?", [session.id]);
+		await redis.del(`session:${sessionId}`);
 		return { session: null, user: null };
 	}
+
+	const user = await redis.get<User | null>(`user:${sessionData.userId}`);
+	if (!user) {
+		return { session: null, user: null };
+	}
+
 	if (Date.now() >= session.expiresAt.getTime() - 1000 * 60 * 60 * 24 * 15) {
 		session.expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 24 * 30);
-		db.execute("UPDATE session SET expires_at = ? WHERE session.id = ?", [
-			Math.floor(session.expiresAt.getTime() / 1000),
-			session.id
-		]);
+		await redis.setex(
+			`session:${sessionId}`,
+			Math.floor(30 * 24 * 60 * 60),
+			JSON.stringify({
+				userId: session.userId,
+				expiresAt: session.expiresAt.getTime()
+			})
+		);
 	}
 	return { session, user };
 }
 
-export function invalidateSession(sessionId: string): void {
-	db.execute("DELETE FROM session WHERE id = ?", [sessionId]);
+export async function invalidateSession(sessionId: string): Promise<void> {
+	await redis.del(`session:${sessionId}`);
 }
 
-export function invalidateUserSessions(userId: number): void {
-	db.execute("DELETE FROM session WHERE user_id = ?", [userId]);
+export async function invalidateUserSessions(userId: number): Promise<void> {
+	const keys = await redis.keys(`session:*`);
+	for (const key of keys) {
+		const sessionData = await redis.get<SessionData | null>(key);
+		if (sessionData && sessionData.userId === userId) {
+			await redis.del(key);
+		}
+	}
 }
 
 export function setSessionTokenCookie(event: RequestEvent, token: string, expiresAt: Date): void {
-	event.cookies.set("session", token, {
+	event.cookies.set('session', token, {
 		httpOnly: true,
-		path: "/",
+		path: '/',
 		secure: import.meta.env.PROD,
-		sameSite: "lax",
+		sameSite: 'lax',
 		expires: expiresAt
 	});
 }
 
 export function deleteSessionTokenCookie(event: RequestEvent): void {
-	event.cookies.set("session", "", {
+	event.cookies.set('session', '', {
 		httpOnly: true,
-		path: "/",
+		path: '/',
 		secure: import.meta.env.PROD,
-		sameSite: "lax",
+		sameSite: 'lax',
 		maxAge: 0
 	});
 }
@@ -80,25 +94,23 @@ export function generateSessionToken(): string {
 	return token;
 }
 
-export function createSession(token: string, userId: number): Session {
+export async function createSession(token: string, userId: number): Promise<Session> {
 	const sessionId = encodeHexLowerCase(sha256(new TextEncoder().encode(token)));
+	const sessionDuration = 30 * 24 * 60 * 60;
 	const session: Session = {
 		id: sessionId,
 		userId,
-		expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24 * 30)
+		expiresAt: new Date(Date.now() + sessionDuration * 1000)
 	};
-	db.execute("INSERT INTO session (id, user_id, expires_at) VALUES (?, ?, ?)", [
-		session.id,
-		session.userId,
-		Math.floor(session.expiresAt.getTime() / 1000)
-	]);
+	await redis.setex(
+		`session:${sessionId}`,
+		Math.floor(sessionDuration),
+		JSON.stringify({
+			userId: session.userId,
+			expiresAt: session.expiresAt.getTime()
+		})
+	);
 	return session;
-}
-
-export interface Session {
-	id: string;
-	expiresAt: Date;
-	userId: number;
 }
 
 type SessionValidationResult = { session: Session; user: User } | { session: null; user: null };

@@ -1,38 +1,33 @@
-import { db } from "./db";
+import { redis } from './db';
 
-export function createUser(googleId: string, email: string, name: string, picture: string): User {
-	const row = db.queryOne("INSERT INTO user (google_id, email, name, picture) VALUES (?, ?, ?, ?) RETURNING user.id", [
-		googleId,
-		email,
-		name,
-		picture
-	]);
-	if (row === null) {
-		throw new Error("Unexpected error");
-	}
+export async function createUser(
+	googleId: string,
+	email: string,
+	name: string,
+	picture: string
+): Promise<User> {
+	const userId = Date.now();
 	const user: User = {
-		id: row.number(0),
+		id: userId,
 		googleId,
 		email,
 		name,
 		picture
 	};
+
+	await redis.set(`user:${userId}`, JSON.stringify(user));
+	await redis.set(`googleId:${googleId}`, userId);
+
 	return user;
 }
 
-export function getUserFromGoogleId(googleId: string): User | null {
-	const row = db.queryOne("SELECT id, google_id, email, name, picture FROM user WHERE google_id = ?", [googleId]);
-	if (row === null) {
+export async function getUserFromGoogleId(googleId: string): Promise<User | null> {
+	const userId = await redis.get(`googleId:${googleId}`);
+	if (!userId) {
 		return null;
 	}
-	const user: User = {
-		id: row.number(0),
-		googleId: row.string(1),
-		email: row.string(2),
-		name: row.string(3),
-		picture: row.string(4)
-	};
-	return user;
+
+	return await redis.get<User | null>(`user:${userId}`);
 }
 
 export interface User {
