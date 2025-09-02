@@ -83,4 +83,27 @@
 
 		<button type="submit" class="bg-green-500 px-2 py-1 text-white">save</button>
 	</div>
+
+	{#if data.savedEmails && data.savedEmails}
+		<div class="mt-6">
+			<label for="savedEmals">Imported Emails</label>
+			<ul id="savedEmals" class="mt-4 h-40 overflow-y-scroll border">
+				{#each Object.keys(data.savedEmails) as key (key)}
+					<li>
+						<a
+							href="https://scrapbox.io/{data.userConfig?.cosenseProjectName}/{encodeURIComponent(
+								data.savedEmails[key].pageTitle
+							)}"
+							title={data.savedEmails[key].pageTitle}
+							class="underline"
+							target="_blank"
+							rel="noopener noreferrer"
+						>
+							{data.savedEmails[key].pageTitle}
+						</a>
+					</li>
+				{/each}
+			</ul>
+		</div>
+	{/if}
 </form>

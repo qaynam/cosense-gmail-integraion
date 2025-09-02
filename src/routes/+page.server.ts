@@ -3,12 +3,14 @@ import { deleteSessionTokenCookie, invalidateSession } from '$lib/server/session
 
 import type { Actions, RequestEvent } from './$types';
 import { getUserConfig, updateUserConfig, type UserConfig } from '$lib/server/user';
+import { getSavedEmailRecords } from '$lib/server/gmail';
 
 export async function load(event: RequestEvent) {
 	if (event.locals.session === null || event.locals.user === null) {
 		return redirect(302, '/login');
 	}
 	const userConfig = await getUserConfig(event.locals.user.id);
+	const savedEmails = await getSavedEmailRecords(event.locals.user.id);
 	const isSessionIdRegistered = userConfig?.cosenseSessionId ? true : false;
 	return {
 		user: event.locals.user,
@@ -17,7 +19,8 @@ export async function load(event: RequestEvent) {
 					cosenseProjectName: userConfig.cosenseProjectName,
 					isSessionIdRegistered
 				}
-			: null
+			: null,
+		savedEmails
 	};
 }
 

@@ -1,5 +1,6 @@
 import { redis } from './db';
 import { encryptToken, decryptToken } from './crypto';
+import { google } from './oauth';
 
 export interface User {
 	id: number;
@@ -81,4 +82,44 @@ export async function getUserToken(userId: number): Promise<UserToken | null> {
 		...tokenData,
 		refreshToken: decryptToken(tokenData.refreshToken)
 	};
+}
+
+export async function refreshAccessToken(userId: number): Promise<string | null> {
+	const userToken = await getUserToken(userId);
+	if (!userToken || !userToken.refreshToken) {
+		return null;
+	}
+
+	try {
+		const tokens = await google.refreshAccessToken(userToken.refreshToken);
+
+		const updatedToken: UserToken = {
+			...userToken,
+			accessToken: tokens.accessToken(),
+			accessTokenExpiresAt: tokens.accessTokenExpiresAt().toISOString()
+		};
+
+		await saveUserToken(userId, updatedToken);
+		return tokens.accessToken();
+	} catch (error) {
+		console.error('Failed to refresh token:', error);
+		return null;
+	}
+}
+
+export async function getValidAccessToken(userId: number): Promise<string | null> {
+	const userToken = await getUserToken(userId);
+	if (!userToken) {
+		return null;
+	}
+
+	const expiresAt = new Date(userToken.accessTokenExpiresAt);
+	const now = new Date();
+
+	// Check if token expires within the next 5 minutes
+	if (expiresAt.getTime() - now.getTime() < 5 * 60 * 1000) {
+		return await refreshAccessToken(userId);
+	}
+
+	return userToken.accessToken;
 }
