@@ -6,7 +6,10 @@ import type { RequestEvent } from "./$types";
 export function GET(event: RequestEvent): Response {
 	const state = generateState();
 	const codeVerifier = generateCodeVerifier();
-	const url = google.createAuthorizationURL(state, codeVerifier, ["openid", "profile", "email"]);
+	const url = google.createAuthorizationURL(state, codeVerifier, ["openid", "profile", "email", "https://www.googleapis.com/auth/gmail.readonly"]);
+	
+	url.searchParams.set("access_type", "offline");
+	url.searchParams.set("prompt", "consent");
 
 	event.cookies.set("google_oauth_state", state, {
 		httpOnly: true,

@@ -1,4 +1,5 @@
 import { redis } from './db';
+import { encryptToken, decryptToken } from './crypto';
 
 export interface User {
 	id: number;
@@ -11,6 +12,14 @@ export interface User {
 export interface UserConfig {
 	cosenseProjectName: string;
 	cosenseSessionId: string;
+}
+
+export interface UserToken {
+	accessToken: string;
+	refreshToken: string;
+	scope: string[];
+	tokenType: string;
+	accessTokenExpiresAt: string;
 }
 
 export async function createUser(
@@ -43,10 +52,33 @@ export async function getUserFromGoogleId(googleId: string): Promise<User | null
 	return await redis.get<User | null>(`user:${userId}`);
 }
 
-export async function updateUserConfig(userId: number, config: UserConfig) {
-	await redis.set(`userConfig:${userId}`, JSON.stringify(config));
+export async function updateUserConfig(userId: number, config: Partial<UserConfig>) {
+	const existingConfig = (await redis.get(`userConfig:${userId}`)) || {};
+	const updatedConfig = { ...existingConfig, ...config };
+	await redis.set(`userConfig:${userId}`, JSON.stringify(updatedConfig));
 }
 
 export async function getUserConfig(userId: number): Promise<UserConfig | null> {
 	return await redis.get<UserConfig | null>(`userConfig:${userId}`);
+}
+
+export async function saveUserToken(userId: number, userToken: UserToken) {
+	const tokenToSave = {
+		...userToken,
+		refreshToken: encryptToken(userToken.refreshToken)
+	};
+
+	await redis.set(`token:${userId}`, JSON.stringify(tokenToSave));
+}
+
+export async function getUserToken(userId: number): Promise<UserToken | null> {
+	const tokenData = await redis.get<UserToken | null>(`token:${userId}`);
+	if (!tokenData) {
+		return null;
+	}
+
+	return {
+		...tokenData,
+		refreshToken: decryptToken(tokenData.refreshToken)
+	};
 }

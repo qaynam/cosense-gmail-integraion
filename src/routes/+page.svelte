@@ -7,9 +7,11 @@
 	let cosenseProjectName = $derived(
 		form?.data?.cosenseProjectName || data.userConfig?.cosenseProjectName
 	);
-	let cosenseSessionId = $derived(
-		form?.data?.cosenseSessionId || data.userConfig?.cosenseSessionId
+	let isSessionIdRegistered = $derived(
+		form?.data?.isSessionIdRegistered || data.userConfig?.isSessionIdRegistered
 	);
+	let cosenseSessionIdInput: HTMLInputElement;
+	let sessionInputFocused = $state(false);
 
 	$effect(() => {
 		if (form?.error) {
@@ -54,9 +56,28 @@
 					name="cosenseSessionId"
 					type="password"
 					autocomplete="off"
-					onfocus={(e) => e.currentTarget.select()}
-					bind:value={cosenseSessionId}
+					defaultValue={isSessionIdRegistered ? '********' : ''}
+					disabled={!!isSessionIdRegistered}
+					onfocus={() => (sessionInputFocused = true)}
+					onblur={(e) => {
+						sessionInputFocused = false;
+						if (!e.currentTarget.value) {
+							e.currentTarget.value = '********';
+							e.currentTarget.disabled = true;
+						}
+					}}
+					bind:this={cosenseSessionIdInput}
 				/>
+				{#if !sessionInputFocused}
+					<button
+						type="button"
+						onclick={() => {
+							cosenseSessionIdInput.disabled = false;
+							cosenseSessionIdInput.value = '';
+							cosenseSessionIdInput.focus();
+						}}>✏️edit</button
+					>
+				{/if}
 			</div>
 		</div>
 

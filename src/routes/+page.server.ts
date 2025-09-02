@@ -14,8 +14,8 @@ export async function load(event: RequestEvent) {
 		user: event.locals.user,
 		userConfig: userConfig
 			? {
-					...userConfig,
-					cosenseSessionId: isSessionIdRegistered ? '**********' : undefined
+					cosenseProjectName: userConfig.cosenseProjectName,
+					isSessionIdRegistered
 				}
 			: null
 	};
@@ -44,14 +44,17 @@ async function saveConfig(event: RequestEvent) {
 	const formData = await event.request.formData();
 	const data: Partial<UserConfig> = Object.fromEntries(formData.entries());
 
-	if (!data.cosenseProjectName || !data.cosenseSessionId) {
-		return fail(400, { error: 'Missing required fields' });
+	if (!data.cosenseProjectName && !data.cosenseSessionId) {
+		return fail(400, { error: 'Please provide either project name or session ID, not both.' });
 	}
 
-	await updateUserConfig(user.id, data as UserConfig);
+	await updateUserConfig(user.id, data);
 
 	return {
 		ok: true,
-		data
+		data: {
+			cosenseProjectName: data.cosenseProjectName,
+			isSessionIdRegistered: true
+		}
 	};
 }

@@ -1,10 +1,10 @@
 import { google } from '$lib/server/oauth';
-import { createUser, getUserFromGoogleId } from '$lib/server/user';
 import { createSession, generateSessionToken, setSessionTokenCookie } from '$lib/server/session';
+import { createUser, getUserFromGoogleId, saveUserToken } from '$lib/server/user';
 import { decodeIdToken } from 'arctic';
 
-import type { RequestEvent } from './$types';
 import type { OAuth2Tokens } from 'arctic';
+import type { RequestEvent } from './$types';
 
 type GoogleClaims = {
 	iss: string;
@@ -55,23 +55,26 @@ export async function GET(event: RequestEvent): Promise<Response> {
 	const picture = claims.picture;
 	const email = claims.email;
 
-	const existingUser = await getUserFromGoogleId(googleId);
-	if (existingUser !== null) {
+	let user = await getUserFromGoogleId(googleId);
+	if (user !== null) {
 		const sessionToken = generateSessionToken();
-		const session = await createSession(sessionToken, existingUser.id);
+		const session = await createSession(sessionToken, user.id);
 		setSessionTokenCookie(event, sessionToken, session.expiresAt);
-		return new Response(null, {
-			status: 302,
-			headers: {
-				Location: '/'
-			}
-		});
+	} else {
+		user = await createUser(googleId, email, name, picture);
+		const sessionToken = generateSessionToken();
+		const session = await createSession(sessionToken, user.id);
+		setSessionTokenCookie(event, sessionToken, session.expiresAt);
 	}
 
-	const user = await createUser(googleId, email, name, picture);
-	const sessionToken = generateSessionToken();
-	const session = await createSession(sessionToken, user.id);
-	setSessionTokenCookie(event, sessionToken, session.expiresAt);
+	await saveUserToken(user.id, {
+		accessToken: tokens.accessToken(),
+		refreshToken: tokens.refreshToken(),
+		scope: tokens.scopes(),
+		tokenType: tokens.tokenType(),
+		accessTokenExpiresAt: tokens.accessTokenExpiresAt().toISOString()
+	});
+
 	return new Response(null, {
 		status: 302,
 		headers: {
