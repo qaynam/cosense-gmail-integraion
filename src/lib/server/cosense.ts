@@ -59,7 +59,7 @@ export async function importToCosense(
 
 		// Convert email content to Scrapbox format with metadata
 		const metadataLines = formatEmailMetadata(email);
-		
+
 		// Escape square brackets in email body and split into lines
 		const escapedBody = escapeSquareBrackets(email.body);
 		const bodyLines = escapedBody.replace(/\r\n/g, '\n').split('\n');
@@ -192,7 +192,7 @@ export async function checkPageExists(userId: number, pageTitle: string): Promis
 			return false;
 		}
 
-		const checkUrl = `https://scrapbox.io/api/pages/${userConfig.cosenseProjectName}/${encodeURIComponent(pageTitle)}`;
+		const checkUrl = `https://scrapbox.io/api/pages/${userConfig.cosenseProjectName}/${encodeURIComponent(pageTitle)}/text`;
 		const checkResponse = await fetch(checkUrl, {
 			method: 'GET',
 			headers: {
