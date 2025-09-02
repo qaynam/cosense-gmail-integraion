@@ -13,6 +13,7 @@ export interface User {
 export interface UserConfig {
 	cosenseProjectName: string;
 	cosenseSessionId: string;
+	discordWebhookLink?: string;
 }
 
 export interface UserToken {

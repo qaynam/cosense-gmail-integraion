@@ -51,13 +51,18 @@ async function saveConfig(event: RequestEvent) {
 		return fail(400, { error: 'Please provide either project name or session ID, not both.' });
 	}
 
+	if (data.discordWebhookLink && !URL.canParse(data.discordWebhookLink)) {
+		return fail(400, { error: 'Please provide a valid Discord webhook URL.' });
+	}
+
 	await updateUserConfig(user.id, data);
 
 	return {
 		ok: true,
 		data: {
 			cosenseProjectName: data.cosenseProjectName,
-			isSessionIdRegistered: true
+			isSessionIdRegistered: true,
+			discordWebhookLink: data.discordWebhookLink
 		}
 	};
 }

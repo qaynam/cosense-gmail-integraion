@@ -10,6 +10,9 @@
 	let isSessionIdRegistered = $derived(
 		form?.data?.isSessionIdRegistered || data.userConfig?.isSessionIdRegistered
 	);
+	let discordWebhookLink = $derived(
+		form?.data?.discordWebhookLink || data.userConfig?.discordWebhookLink
+	);
 	let cosenseSessionIdInput: HTMLInputElement;
 	let sessionInputFocused = $state(false);
 
@@ -44,7 +47,7 @@
 					name="cosenseProjectName"
 					type="text"
 					autocomplete="off"
-					bind:value={cosenseProjectName}
+					defaultValue={cosenseProjectName}
 				/>
 			</div>
 		</div>
@@ -78,6 +81,19 @@
 						}}>✏️edit</button
 					>
 				{/if}
+			</div>
+		</div>
+
+		<div>
+			<label for="discordWebhookLink">discord Webhook Link</label>
+			<div>
+				<input
+					id="discordWebhookLink"
+					name="discordWebhookLink"
+					type="url"
+					autocomplete="off"
+					defaultValue={discordWebhookLink || ''}
+				/>
 			</div>
 		</div>
 

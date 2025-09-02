@@ -11,6 +11,8 @@ import { redis } from '$lib/server/db';
 import type { RequestEvent } from './$types';
 import { CRON_SECRET } from '$env/static/private';
 import type { Config } from '@sveltejs/adapter-vercel';
+import { getUserConfig, type UserConfig } from '$lib/server/user';
+import { sendNotificationToDiscord } from '$lib/server/notification';
 
 export const config: Config = {
 	maxDuration: 300,
@@ -33,16 +35,22 @@ export async function GET(event: RequestEvent): Promise<Response> {
 		return json({ success: false, error: 'Unauthorized' }, { status: 401 });
 	}
 
+	let userConfig: UserConfig | null = null;
+
 	try {
 		// Get all users who have valid tokens
 		const userKeys = await redis.keys('user:*');
 		const results = [];
+		const successPages: string[] = [];
 
 		for (const userKey of userKeys) {
 			const userIdStr = userKey.replace('user:', '');
 			const userId = parseInt(userIdStr, 10);
 
 			if (isNaN(userId)) continue;
+
+			// Get user config
+			if (!userConfig) userConfig = await getUserConfig(userId);
 
 			try {
 				console.log(`Processing Gmail sync for user ${userId}...`);
@@ -103,6 +111,9 @@ export async function GET(event: RequestEvent): Promise<Response> {
 						if (importResult.success && importResult.pageTitle) {
 							await saveEmailRecord(userId, emailId, importResult.pageTitle);
 							successCount++;
+							successPages.push(
+								`https://scrapbox.io/${userConfig?.cosenseProjectName}/${encodeURIComponent(importResult.pageTitle)}`
+							);
 							console.log(`Successfully imported email ${emailId}: ${emailContent.subject}`);
 						} else {
 							console.error(`Failed to import email ${emailId}:`, importResult.error);
@@ -136,14 +147,27 @@ export async function GET(event: RequestEvent): Promise<Response> {
 			}
 		}
 
-		return json({
+		const result = {
 			success: true,
 			message: 'Batch processing completed',
 			results,
 			totalUsers: results.length
-		});
+		};
+
+		if (userConfig?.discordWebhookLink) {
+			const message = `Gmail sync completed successfully!\n\nResults:\n${results.map((r) => `User ${r.userId}: ${r.message || r.error || 'Processing completed'}`).join('\n')}\n\nTotal users processed: ${results.length}\n ${successPages.length > 0 ? '\nImported Pages:\n' + successPages.join('\n') : ''}`;
+			await sendNotificationToDiscord(userConfig?.discordWebhookLink, message);
+		}
+
+		return json(result);
 	} catch (error) {
 		console.error('Batch processing error:', error);
+
+		if (userConfig?.discordWebhookLink) {
+			const message = `❌ Gmail sync Failed!\n\nError: ${error instanceof Error ? error.message : 'Unknown error'}`;
+			await sendNotificationToDiscord(userConfig?.discordWebhookLink, message);
+		}
+
 		return json(
 			{
 				success: false,
