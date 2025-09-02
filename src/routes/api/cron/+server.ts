@@ -8,7 +8,6 @@ import {
 } from '$lib/server/gmail';
 import { importToCosense, checkPageExists } from '$lib/server/cosense';
 import { redis } from '$lib/server/db';
-
 import type { RequestEvent } from './$types';
 import { CRON_SECRET } from '$env/static/private';
 import type { Config } from '@sveltejs/adapter-vercel';
