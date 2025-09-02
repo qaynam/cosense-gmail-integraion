@@ -1,5 +1,18 @@
 import { redis } from './db';
 
+export interface User {
+	id: number;
+	email: string;
+	googleId: string;
+	name: string;
+	picture: string;
+}
+
+export interface UserConfig {
+	cosenseProjectName: string;
+	cosenseSessionId: string;
+}
+
 export async function createUser(
 	googleId: string,
 	email: string,
@@ -30,10 +43,10 @@ export async function getUserFromGoogleId(googleId: string): Promise<User | null
 	return await redis.get<User | null>(`user:${userId}`);
 }
 
-export interface User {
-	id: number;
-	email: string;
-	googleId: string;
-	name: string;
-	picture: string;
+export async function updateUserConfig(userId: number, config: UserConfig) {
+	await redis.set(`userConfig:${userId}`, JSON.stringify(config));
+}
+
+export async function getUserConfig(userId: number): Promise<UserConfig | null> {
+	return await redis.get<UserConfig | null>(`userConfig:${userId}`);
 }
