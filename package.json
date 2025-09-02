@@ -40,6 +40,7 @@
 		"vitest": "^3.2.3"
 	},
 	"dependencies": {
+		"@sveltejs/adapter-vercel": "^5.10.2",
 		"@upstash/redis": "^1.35.3",
 		"arctic": "^3.7.0"
 	}
