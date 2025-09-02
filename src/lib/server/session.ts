@@ -17,53 +17,66 @@ export interface Session extends Omit<SessionData, 'expiresAt'> {
 
 export async function validateSessionToken(token: string): Promise<SessionValidationResult> {
 	const sessionId = encodeHexLowerCase(sha256(new TextEncoder().encode(token)));
-	const sessionData = await redis.get<SessionData | null>(`session:${sessionId}`);
-
-	if (!sessionData) {
+	const sessionData = await redis.json.get(`session:${sessionId}`, '$') as SessionData[] | null;
+	
+	if (!sessionData || sessionData.length === 0) {
 		return { session: null, user: null };
 	}
-
+	
 	const session: Session = {
 		id: sessionId,
-		userId: sessionData.userId,
-		expiresAt: new Date(sessionData.expiresAt)
+		userId: sessionData[0].userId,
+		expiresAt: new Date(sessionData[0].expiresAt)
 	};
+
 
 	if (Date.now() >= session.expiresAt.getTime()) {
 		await redis.del(`session:${sessionId}`);
 		return { session: null, user: null };
 	}
 
-	const user = await redis.get<User | null>(`user:${sessionData.userId}`);
-	if (!user) {
+	const userData = await redis.json.get(`user:${session.userId}`, '$') as User[] | null;
+	if (!userData || userData.length === 0) {
 		return { session: null, user: null };
 	}
+	
+	const user = userData[0];
 
 	if (Date.now() >= session.expiresAt.getTime() - 1000 * 60 * 60 * 24 * 15) {
 		session.expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 24 * 30);
-		await redis.setex(
-			`session:${sessionId}`,
-			Math.floor(30 * 24 * 60 * 60),
-			JSON.stringify({
-				userId: session.userId,
-				expiresAt: session.expiresAt.getTime()
-			})
-		);
+		await redis.json.set(`session:${sessionId}`, '$', {
+			userId: session.userId,
+			expiresAt: session.expiresAt.getTime()
+		});
+		await redis.expire(`session:${sessionId}`, Math.floor(30 * 24 * 60 * 60));
 	}
 	return { session, user };
 }
 
 export async function invalidateSession(sessionId: string): Promise<void> {
+	// Get session data to find userId before deletion
+	const sessionData = await redis.get<SessionData | null>(`session:${sessionId}`);
+	
 	await redis.del(`session:${sessionId}`);
+	
+	// Remove from user's session set if session existed
+	if (sessionData) {
+		await redis.srem(`user:${sessionData.userId}:sessions`, sessionId);
+	}
 }
 
 export async function invalidateUserSessions(userId: number): Promise<void> {
-	const keys = await redis.keys(`session:*`);
-	for (const key of keys) {
-		const sessionData = await redis.get<SessionData | null>(key);
-		if (sessionData && sessionData.userId === userId) {
-			await redis.del(key);
-		}
+	// Use a set to track user sessions for more efficient invalidation
+	const userSessionsKey = `user:${userId}:sessions`;
+	const sessionIds = await redis.smembers(userSessionsKey);
+	
+	if (sessionIds.length > 0) {
+		// Delete all sessions for the user
+		const sessionKeys = sessionIds.map(id => `session:${id}`);
+		await redis.del(...sessionKeys);
+		
+		// Clear the user sessions set
+		await redis.del(userSessionsKey);
 	}
 }
 
@@ -102,14 +115,18 @@ export async function createSession(token: string, userId: number): Promise<Sess
 		userId,
 		expiresAt: new Date(Date.now() + sessionDuration * 1000)
 	};
-	await redis.setex(
-		`session:${sessionId}`,
-		Math.floor(sessionDuration),
-		JSON.stringify({
-			userId: session.userId,
-			expiresAt: session.expiresAt.getTime()
-		})
-	);
+	
+	// Store session data
+	await redis.json.set(`session:${sessionId}`, '$', {
+		userId: session.userId,
+		expiresAt: session.expiresAt.getTime()
+	});
+	await redis.expire(`session:${sessionId}`, Math.floor(sessionDuration));
+	
+	// Add session to user's session set for efficient cleanup
+	await redis.sadd(`user:${userId}:sessions`, sessionId);
+	await redis.expire(`user:${userId}:sessions`, Math.floor(sessionDuration));
+	
 	return session;
 }
 

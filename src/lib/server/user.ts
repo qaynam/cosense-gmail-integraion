@@ -38,7 +38,7 @@ export async function createUser(
 		picture
 	};
 
-	await redis.set(`user:${userId}`, JSON.stringify(user));
+	await redis.json.set(`user:${userId}`, '$', user as unknown as Record<string, unknown>);
 	await redis.set(`googleId:${googleId}`, userId);
 
 	return user;
@@ -50,17 +50,26 @@ export async function getUserFromGoogleId(googleId: string): Promise<User | null
 		return null;
 	}
 
-	return await redis.get<User | null>(`user:${userId}`);
+	const userData = (await redis.json.get(`user:${userId}`, '$')) as User[] | null;
+	return userData && userData.length > 0 ? userData[0] : null;
 }
 
 export async function updateUserConfig(userId: number, config: Partial<UserConfig>) {
-	const existingConfig = (await redis.get(`userConfig:${userId}`)) || {};
+	// Get existing config or use empty object
+	const existingConfigData = await redis.json.get<UserConfig[] | null>(`userConfig:${userId}`, '$');
+	const existingConfig =
+		existingConfigData && existingConfigData.length > 0 ? existingConfigData[0] : {};
+
+	// Merge with new config
 	const updatedConfig = { ...existingConfig, ...config };
-	await redis.set(`userConfig:${userId}`, JSON.stringify(updatedConfig));
+
+	// Save the complete updated config
+	await redis.json.set(`userConfig:${userId}`, '$', updatedConfig);
 }
 
 export async function getUserConfig(userId: number): Promise<UserConfig | null> {
-	return await redis.get<UserConfig | null>(`userConfig:${userId}`);
+	const configData = (await redis.json.get(`userConfig:${userId}`, '$')) as UserConfig[] | null;
+	return configData && configData.length > 0 ? configData[0] : null;
 }
 
 export async function saveUserToken(userId: number, userToken: UserToken) {
@@ -69,18 +78,18 @@ export async function saveUserToken(userId: number, userToken: UserToken) {
 		refreshToken: encryptToken(userToken.refreshToken)
 	};
 
-	await redis.set(`token:${userId}`, JSON.stringify(tokenToSave));
+	await redis.json.set(`token:${userId}`, '$', tokenToSave);
 }
 
 export async function getUserToken(userId: number): Promise<UserToken | null> {
-	const tokenData = await redis.get<UserToken | null>(`token:${userId}`);
-	if (!tokenData) {
+	const tokenData = (await redis.json.get(`token:${userId}`, '$')) as UserToken[] | null;
+	if (!tokenData || tokenData.length === 0) {
 		return null;
 	}
 
 	return {
-		...tokenData,
-		refreshToken: decryptToken(tokenData.refreshToken)
+		...tokenData[0],
+		refreshToken: decryptToken(tokenData[0].refreshToken)
 	};
 }
 

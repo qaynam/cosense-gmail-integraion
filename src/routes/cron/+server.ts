@@ -20,7 +20,6 @@ export const config: Config = {
 function checkAuth(event: RequestEvent): boolean {
 	const authHeader =
 		event.request.headers.get('authorization') || event.request.headers.get('Authorization');
-	console.log(authHeader, CRON_SECRET);
 
 	if (authHeader !== `Bearer ${CRON_SECRET}`) {
 		return false;

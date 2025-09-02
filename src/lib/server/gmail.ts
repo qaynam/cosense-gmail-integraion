@@ -84,7 +84,8 @@ export async function getCosenseEmails(userId: number, limit?: number): Promise<
 }
 
 export async function getSavedEmailRecords(userId: number): Promise<SavedEmailRecord> {
-	return (await redis.get<SavedEmailRecord | null>(`userSavedEmails:${userId}`)) || {};
+	const emailRecords = await redis.json.get(`userSavedEmails:${userId}`, '$') as SavedEmailRecord[] | null;
+	return emailRecords && emailRecords.length > 0 ? emailRecords[0] : {};
 }
 
 export async function getUnsavedEmailIds(userId: number, limit?: number): Promise<string[]> {
@@ -190,16 +191,26 @@ export async function saveEmailRecord(
 	emailId: string,
 	pageTitle: string
 ): Promise<void> {
+	// Get existing saved emails or use empty object
 	const savedEmails = await getSavedEmailRecords(userId);
+	
+	// Add the new email record
 	savedEmails[emailId] = {
 		pageTitle,
 		importedAt: new Date().toISOString()
 	};
-	await redis.set(`userSavedEmails:${userId}`, JSON.stringify(savedEmails));
+	
+	// Save the complete updated object
+	await redis.json.set(`userSavedEmails:${userId}`, '$', savedEmails);
 }
 
 export async function removeEmailRecord(userId: number, emailId: string): Promise<void> {
+	// Get existing saved emails
 	const savedEmails = await getSavedEmailRecords(userId);
+	
+	// Remove the email record
 	delete savedEmails[emailId];
-	await redis.set(`userSavedEmails:${userId}`, JSON.stringify(savedEmails));
+	
+	// Save the updated object
+	await redis.json.set(`userSavedEmails:${userId}`, '$', savedEmails);
 }
