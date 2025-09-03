@@ -154,19 +154,15 @@ export async function GET(event: RequestEvent): Promise<Response> {
 			totalUsers: results.length
 		};
 
-		if (userConfig?.discordWebhookLink) {
-			const message = `Gmail sync completed successfully!\n\nResults:\n${results.map((r) => `User ${r.userId}: ${r.message || r.error || 'Processing completed'}`).join('\n')}\n\nTotal users processed: ${results.length}\n ${successPages.length > 0 ? '\nImported Pages:\n' + successPages.join('\n') : ''}`;
-			await sendNotificationToDiscord(userConfig?.discordWebhookLink, message);
-		}
+		const message = `Gmail sync completed successfully!\n\nResults:\n${results.map((r) => `User ${r.userId}: ${r.message || r.error || 'Processing completed'}`).join('\n')}\n\nTotal users processed: ${results.length}\n ${successPages.length > 0 ? '\nImported Pages:\n' + successPages.join('\n') : ''}`;
+		await sendNotificationToDiscord(message, userConfig?.discordWebhookLink);
 
 		return json(result);
 	} catch (error) {
 		console.error('Batch processing error:', error);
 
-		if (userConfig?.discordWebhookLink) {
-			const message = `❌ Gmail sync Failed!\n\nError: ${error instanceof Error ? error.message : 'Unknown error'}`;
-			await sendNotificationToDiscord(userConfig?.discordWebhookLink, message);
-		}
+		const message = `❌ Gmail sync Failed!\n\nError: ${error instanceof Error ? error.message : 'Unknown error'}`;
+		await sendNotificationToDiscord(message, userConfig?.discordWebhookLink);
 
 		return json(
 			{

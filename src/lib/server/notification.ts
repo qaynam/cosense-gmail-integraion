@@ -1,4 +1,8 @@
-export async function sendNotificationToDiscord(discordWebhookLink: string, message: string) {
+export async function sendNotificationToDiscord(message: string, discordWebhookLink?: string) {
+	if (!discordWebhookLink) {
+		return;
+	}
+
 	try {
 		const response = await fetch(discordWebhookLink, {
 			method: 'POST',

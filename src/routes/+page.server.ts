@@ -9,7 +9,7 @@ export async function load(event: RequestEvent) {
 	if (event.locals.session === null || event.locals.user === null) {
 		return redirect(302, '/login');
 	}
-	const userConfig = await getUserConfig(event.locals.user.id);
+	const userConfig = await getUserConfig(event.locals.user.id, { decryptSessionId: false });
 	const savedEmails = await getSavedEmailRecords(event.locals.user.id);
 	const isSessionIdRegistered = userConfig?.cosenseSessionId ? true : false;
 	return {

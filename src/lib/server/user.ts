@@ -61,16 +61,45 @@ export async function updateUserConfig(userId: number, config: Partial<UserConfi
 	const existingConfig =
 		existingConfigData && existingConfigData.length > 0 ? existingConfigData[0] : {};
 
+	// Encrypt cosenseSessionId if provided
+	const configToSave = { ...config };
+	if (configToSave.cosenseSessionId) {
+		configToSave.cosenseSessionId = encryptToken(configToSave.cosenseSessionId);
+	}
+
 	// Merge with new config
-	const updatedConfig = { ...existingConfig, ...config };
+	const updatedConfig = { ...existingConfig, ...configToSave };
 
 	// Save the complete updated config
 	await redis.json.set(`userConfig:${userId}`, '$', updatedConfig);
 }
 
-export async function getUserConfig(userId: number): Promise<UserConfig | null> {
+export async function getUserConfig(
+	userId: number,
+	options: {
+		decryptSessionId?: boolean;
+	} = {
+		decryptSessionId: true
+	}
+): Promise<UserConfig | null> {
 	const configData = (await redis.json.get(`userConfig:${userId}`, '$')) as UserConfig[] | null;
-	return configData && configData.length > 0 ? configData[0] : null;
+	if (!configData || configData.length === 0) {
+		return null;
+	}
+
+	const config = configData[0];
+
+	// Decrypt cosenseSessionId if it exists
+	if (config.cosenseSessionId) {
+		return {
+			...config,
+			cosenseSessionId: options?.decryptSessionId
+				? decryptToken(config.cosenseSessionId)
+				: config.cosenseSessionId
+		};
+	}
+
+	return config;
 }
 
 export async function saveUserToken(userId: number, userToken: UserToken) {
