@@ -105,7 +105,7 @@ export async function GET(event: RequestEvent): Promise<Response> {
 							continue;
 						}
 
-						// Import to CoSense
+						// Import to Cosense
 						const importResult = await importToCosense(userId, emailContent);
 
 						if (importResult.success && importResult.pageTitle) {

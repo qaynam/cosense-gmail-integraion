@@ -1,8 +1,8 @@
-# CoSense Gmail Integration
+# Cosense Gmail Integration
 
-Gmailの「cosense」ラベルが付いたメールを自動的にCoSense（Scrapbox）にインポートするSvelteKitアプリケーションです。
+Gmailの「cosense」ラベルが付いたメールを自動的にCosense（Scrapbox）にインポートするSvelteKitアプリケーションです。
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/qaynam/cosense-gmail-integration&env=GOOGLE_CLIENT_ID,GOOGLE_CLIENT_SECRET,UPSTASH_REDIS_URL,UPSTASH_REDIS_TOKEN,TOKEN_ENCRYPTION_KEY,CRON_SECRET&envDescription=Required%20environment%20variables%20for%20Gmail%20and%20CoSense%20integration)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/qaynam/cosense-gmail-integration&env=GOOGLE_CLIENT_ID,GOOGLE_CLIENT_SECRET,UPSTASH_REDIS_URL,UPSTASH_REDIS_TOKEN,TOKEN_ENCRYPTION_KEY,CRON_SECRET&envDescription=Required%20environment%20variables%20for%20Gmail%20and%20Cosense%20integration)
 
 ## 🚀 機能
 
@@ -152,4 +152,4 @@ MIT License - 詳細は [LICENSE](LICENSE) ファイルを参照
 ---
 
 **作成者**: [Qaynam](https://github.com/qaynam)
-**記事**: [ZennでGmail→CoSense自動インポートシステムを作った話](https://zenn.dev/yourusername/articles/gmail-cosense-integration)
+**記事**: [ZennでGmail→Cosense自動インポートシステムを作った話](https://zenn.dev/yourusername/articles/gmail-cosense-integration)

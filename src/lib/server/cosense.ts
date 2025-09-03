@@ -20,7 +20,7 @@ export async function importToCosense(
 
 		const userConfig = await getUserConfig(userId);
 		if (!userConfig || !userConfig.cosenseSessionId || !userConfig.cosenseProjectName) {
-			return { success: false, error: 'CoSense configuration not found' };
+			return { success: false, error: 'Cosense configuration not found' };
 		}
 
 		const pageTitle = `(📮Email) | ${email.subject}`;
@@ -91,7 +91,7 @@ export async function importToCosense(
 			'import.json'
 		);
 
-		// Import to CoSense
+		// Import to Cosense
 		const importUrl = `https://scrapbox.io/api/page-data/import/${userConfig.cosenseProjectName}.json`;
 		const importResponse = await fetch(importUrl, {
 			method: 'POST',
@@ -156,14 +156,14 @@ export async function importToCosense(
 		return {
 			success: true,
 			pageTitle,
-			message: `Successfully imported "${pageTitle}" to CoSense`,
+			message: `Successfully imported "${pageTitle}" to Cosense`,
 			details: importResult
 		};
 	} catch (error) {
-		console.error('CoSense import error:', error);
+		console.error('Cosense import error:', error);
 		return {
 			success: false,
-			error: 'Failed to import to CoSense',
+			error: 'Failed to import to Cosense',
 			details: error instanceof Error ? error.message : 'Unknown error'
 		};
 	}
