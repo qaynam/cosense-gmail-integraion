@@ -17,6 +17,7 @@ export async function load(event: RequestEvent) {
 		userConfig: userConfig
 			? {
 					cosenseProjectName: userConfig.cosenseProjectName,
+					discordWebhookLink: userConfig.discordWebhookLink,
 					isSessionIdRegistered
 				}
 			: null,
