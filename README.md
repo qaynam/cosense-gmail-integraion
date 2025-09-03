@@ -152,4 +152,5 @@ MIT License - 詳細は [LICENSE](LICENSE) ファイルを参照
 ---
 
 **作成者**: [Qaynam](https://github.com/qaynam)
-**記事**: [ZennでGmail→Cosense自動インポートシステムを作った話](https://zenn.dev/yourusername/articles/gmail-cosense-integration)
+
+**記事**:
