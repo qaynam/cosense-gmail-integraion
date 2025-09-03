@@ -47,7 +47,7 @@
 					name="cosenseProjectName"
 					type="text"
 					autocomplete="off"
-					defaultValue={cosenseProjectName}
+					defaultValue={cosenseProjectName || ''}
 				/>
 			</div>
 		</div>
