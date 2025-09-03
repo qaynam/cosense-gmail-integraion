@@ -2,7 +2,7 @@
 
 Gmailの「cosense」ラベルが付いたメールを自動的にCosense（Scrapbox）にインポートするSvelteKitアプリケーションです。
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/qaynam/cosense-gmail-integration&env=GOOGLE_CLIENT_ID,GOOGLE_CLIENT_SECRET,UPSTASH_REDIS_URL,UPSTASH_REDIS_TOKEN,TOKEN_ENCRYPTION_KEY,CRON_SECRET&envDescription=Required%20environment%20variables%20for%20Gmail%20and%20Cosense%20integration)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/qaynam/cosense-gmail-integration&env=GOOGLE_CLIENT_ID,GOOGLE_CLIENT_SECRET,GOOGLE_REDIRECT_URI,UPSTASH_REDIS_URL,UPSTASH_REDIS_TOKEN,TOKEN_ENCRYPTION_KEY,CRON_SECRET&envDescription=Required%20environment%20variables%20for%20Gmail%20and%20Cosense%20integration)
 
 ## 🚀 機能
 
