@@ -153,4 +153,4 @@ MIT License - 詳細は [LICENSE](LICENSE) ファイルを参照
 
 **作成者**: [Qaynam](https://github.com/qaynam)
 
-**記事**:
+**記事**: [Gmailのメール本文をCosense(旧scrapbox)にインポートするアプリをSveltekitで作ってみました https://zenn.dev/qaynam/articles/280eb617bcf563]
